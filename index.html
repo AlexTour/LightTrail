@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, user-scalable=no"
+    />
+    <title>AR Virtual Light Graffiti</title>
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+      }
+    </style>
+  </head>
+  <body>
+    <script type="module">
+      import * as THREE from 'https://threejsfundamentals.org/threejs/resources/threejs/r125/build/three.module.js';
+
+      // Set up audio context and analyser
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const analyser = audioContext.createAnalyser();
+      analyser.fftSize = 256;
+
+      // Create Three.js scene
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      document.body.appendChild(renderer.domElement);
+
+      // Create XR session
+      navigator.xr.requestSession('immersive-ar').then((session) => {
+        session.updateRenderState({ baseLayer: new XRWebGLLayer(session, renderer) });
+
+        // Create XR controller
+        const controller = renderer.xr.getController(0);
+        controller.addEventListener('selectstart', onSelectStart);
+        scene.add(controller);
+
+        // Create light trails
+        const lightMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 });
+        const lightGeometry = new THREE.BufferGeometry();
+        const lightVertices = [];
+        lightGeometry.setAttribute('position', new THREE.Float32BufferAttribute(lightVertices, 3));
+
+        const lightTrail = new THREE.Mesh(lightGeometry, lightMaterial);
+        scene.add(lightTrail);
+
+        // Handle user interactions
+        let isSelecting = false;
+
+        function onSelectStart() {
+          isSelecting = true;
+        }
+
+        function onSelectEnd() {
+          isSelecting = false;
+        }
+
+        // Handle audio processing
+        navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+          const source = audioContext.createMediaStreamSource(stream);
+          source.connect(analyser);
+
+          // Create a frequency array to store audio data
+          const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+          // Create animation loop
+          function animate() {
+            renderer.setAnimationLoop(() => {
+              analyser.getByteFrequencyData(dataArray);
+
+              // Calculate average amplitude
+              const amplitude = dataArray.reduce((acc, val) => acc + val, 0) / dataArray.length;
+
+              // Update light trail based on amplitude
+              if (isSelecting) {
+                const controllerPosition = new THREE.Vector3();
+                controller.position.clone(controllerPosition);
+
+                lightVertices.push(controllerPosition.x, controllerPosition.y, controllerPosition.z);
+                lightGeometry.attributes.position.needsUpdate = true;
+
+                // Adjust opacity based on amplitude
+                lightMaterial.opacity = amplitude / 255;
+
+                // Limit the length of the light trail
+                if (lightVertices.length > 300) {
+                  lightVertices.shift();
+                }
+              }
+
+              // Render scene
+              renderer.render(scene, camera);
+            });
+          }
+
+          animate();
+        });
+      });
+    </script>
+  </body>
+</html>
