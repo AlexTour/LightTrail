@@ -10,12 +10,24 @@
             margin: 0;
             overflow: hidden;
         }
+
+        .button {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 10px;
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
     <a-scene>
         <!-- 360 Image Background -->
-        <a-sky src="redblue.jpg" rotation="0 0 0"></a-sky>
+        <a-sky src="your-360-image.jpg" rotation="0 -130 0"></a-sky>
 
         <!-- Controller for Painting -->
         <a-entity id="controller" laser-controls="hand: right" paint-controls></a-entity>
@@ -27,6 +39,12 @@
         <a-entity id="cameraRig" position="0 1.6 0">
             <a-camera wasd-controls look-controls></a-camera>
         </a-entity>
+
+        <!-- Start/Stop Painting Button -->
+        <button class="button" onclick="togglePainting()">Toggle Painting</button>
+
+        <!-- Exit VR Button -->
+        <button class="button" onclick="exitVR()">Exit VR</button>
     </a-scene>
 
     <script>
@@ -64,11 +82,30 @@
                         paintDot.setAttribute('color', 'blue');
                         paintDot.setAttribute('radius', '0.05');
                         paintDot.setAttribute('position', event.detail.intersection.point);
+                        paintDot.setAttribute('light', 'type: point; intensity: 2; distance: 5; decay: 2;');
                         el.appendChild(paintDot);
+
+                        // Add audio reactivity (adjust parameters based on your preferences)
+                        const audioReactivity = document.createElement('a-animation');
+                        audioReactivity.setAttribute('attribute', 'radius');
+                        audioReactivity.setAttribute('from', '0.05');
+                        audioReactivity.setAttribute('to', `${0.05 + event.detail.intersection.distance / 10}`);
+                        audioReactivity.setAttribute('dur', '1000');
+                        paintDot.appendChild(audioReactivity);
                     }
                 });
             }
         });
+
+        function togglePainting() {
+            const canvas = document.getElementById('canvas');
+            const paintingEvent = new Event('togglepaint');
+            canvas.dispatchEvent(paintingEvent);
+        }
+
+        function exitVR() {
+            document.querySelector('a-scene').exitVR();
+        }
     </script>
 </body>
 </html>
