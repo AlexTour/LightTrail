@@ -21,13 +21,27 @@
             border: none;
             border-radius: 5px;
             cursor: pointer;
+            z-index: 1; /* Adjust the z-index */
+        }
+
+        .vr-button {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 10px;
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            z-index: 1; /* Adjust the z-index */
         }
     </style>
 </head>
 <body>
     <a-scene>
         <!-- 360 Image Background -->
-        <a-sky src="redblue.jpg" rotation="0 0 0"></a-sky>
+        <a-sky src="redblue.jpg" rotation="0 -130 0"></a-sky>
 
         <!-- Controller for Painting -->
         <a-entity id="controller" laser-controls="hand: right" paint-controls></a-entity>
@@ -41,10 +55,10 @@
         </a-entity>
 
         <!-- Start/Stop Painting Button -->
-        <a-entity class="button" text="value: Toggle Painting" onclick="togglePainting"></a-entity>
+        <a-entity class="button" geometry="primitive: plane; height: 2; width: 2" material="color: #4285f4" text="value: Toggle Painting; align: center; zOffset: 1.5" onclick="togglePainting"></a-entity>
 
         <!-- Exit VR Button -->
-        <a-entity class="button" text="value: Exit VR" onclick="exitVR"></a-entity>
+        <a-entity class="vr-button" geometry="primitive: plane; height: 2; width: 2" material="color: #4285f4" text="value: Exit VR; align: center; zOffset: 1.5" onclick="exitVR"></a-entity>
     </a-scene>
 
     <script>
