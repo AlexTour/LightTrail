@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
-    <title>AR Virtual Light Graffiti</title>
+    <title>VR Painting in 360</title>
     <style>
         body {
             margin: 0;
@@ -13,43 +13,61 @@
     </style>
 </head>
 <body>
-    <a-scene embedded arjs="sourceType: webcam; detectionMode: mono_and_matrix;">
-        <!-- AR Content goes here -->
-        <a-entity id="lightTrail" material="color: #ffffff; opacity: 0.5" position="0 0 0"></a-entity>
+    <a-scene>
+        <!-- 360 Image Background -->
+        <a-sky src="your-360-image.jpg" rotation="0 -130 0"></a-sky>
+
+        <!-- Controller for Painting -->
+        <a-entity id="controller" laser-controls="hand: right" paint-controls></a-entity>
+
+        <!-- Canvas for Painting -->
+        <a-entity id="canvas" paint-canvas></a-entity>
+
+        <!-- Camera and Rig -->
+        <a-entity id="cameraRig" position="0 1.6 0">
+            <a-camera wasd-controls look-controls></a-camera>
+        </a-entity>
     </a-scene>
+
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const lightTrail = document.getElementById('lightTrail');
-            const isSelecting = false;  // Add your logic for user interaction
+        AFRAME.registerComponent('paint-controls', {
+            init: function () {
+                const el = this.el;
+                const canvas = document.getElementById('canvas');
 
-            // Handle audio processing
-            navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
-                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                const analyser = audioContext.createAnalyser();
-                const source = audioContext.createMediaStreamSource(stream);
-                source.connect(analyser);
+                el.addEventListener('triggerdown', function () {
+                    canvas.emit('startpaint');
+                });
 
-                analyser.fftSize = 256;
-                const dataArray = new Uint8Array(analyser.frequencyBinCount);
+                el.addEventListener('triggerup', function () {
+                    canvas.emit('stoppaint');
+                });
+            }
+        });
 
-                // Create animation loop
-                function animate() {
-                    analyser.getByteFrequencyData(dataArray);
+        AFRAME.registerComponent('paint-canvas', {
+            init: function () {
+                const el = this.el;
+                let isPainting = false;
 
-                    // Calculate average amplitude
-                    const amplitude = dataArray.reduce((acc, val) => acc + val, 0) / dataArray.length;
+                el.addEventListener('startpaint', function () {
+                    isPainting = true;
+                });
 
-                    // Update light trail based on amplitude
-                    if (isSelecting) {
-                        lightTrail.setAttribute('scale', `${amplitude / 50} ${amplitude / 50} ${amplitude / 50}`);
-                        lightTrail.setAttribute('material', `opacity: ${amplitude / 255}`);
+                el.addEventListener('stoppaint', function () {
+                    isPainting = false;
+                });
+
+                el.addEventListener('mousedown', function (event) {
+                    if (isPainting) {
+                        const paintDot = document.createElement('a-sphere');
+                        paintDot.setAttribute('color', 'blue');
+                        paintDot.setAttribute('radius', '0.05');
+                        paintDot.setAttribute('position', event.detail.intersection.point);
+                        el.appendChild(paintDot);
                     }
-
-                    requestAnimationFrame(animate);
-                }
-
-                animate();
-            });
+                });
+            }
         });
     </script>
 </body>
